@@ -28,15 +28,21 @@ Telegram <--> OpenClaw Gateway <--> qwen3:32b (via Ollama)
 
 ## Models
 
-| Model | Size | Speed | Use Case |
-|-------|------|-------|----------|
-| gpt-oss:120b | 65GB | ~42.7 tok/s | Primary model for OpenClaw (best quality + fast, MoE architecture) |
-| qwen3:32b | 20GB | ~8.4 tok/s | Alternative model, good quality |
-| llama3.1:8b | 4.9GB | ~38.8 tok/s | Fast responses, basic quality |
-| llama3.1:70b | 42GB | ~4.1 tok/s | Available but too slow for interactive use |
-| nomic-embed-text | 274MB | — | Embeddings |
+### Full Benchmark (DGX Spark GB10)
 
-> **Note:** gpt-oss:120b is an [OpenAI open-source model](https://openai.com/index/introducing-gpt-oss/) (Apache 2.0) using a Mixture-of-Experts (MoE) architecture — 116.8B total parameters but only 5.1B active per token (128 experts, Top-4 routing). This is why it runs at 42+ tok/s despite being 65GB on disk. It uses MXFP4 quantization for the MoE weights with BF16 for other layers. NVIDIA recommends it as the best model for the DGX Spark.
+| Model | Size | Speed | Architecture | Use Case |
+|-------|------|-------|-------------|----------|
+| nemotron-3-nano:30b | 30GB | ~70.8 tok/s | Dense (NVIDIA) | Fastest option — good for speed-critical tasks |
+| gpt-oss:20b | 13GB | ~54.9 tok/s | MoE (OpenAI) | Fast + lightweight |
+| gpt-oss:120b | 65GB | ~39.8 tok/s | MoE (OpenAI) | **Primary model** — best quality + fast |
+| llama3.1:8b | 4.9GB | ~38.8 tok/s | Dense (Meta) | Basic quality, small footprint |
+| qwen3:32b | 20GB | ~9.4 tok/s | Dense (Alibaba) | Good quality but slower |
+| llama3.1:70b | 42GB | ~4.5 tok/s | Dense (Meta) | Too slow for interactive use |
+| nomic-embed-text | 274MB | — | — | Embeddings |
+
+> **Primary model:** gpt-oss:120b is an [OpenAI open-source model](https://openai.com/index/introducing-gpt-oss/) (Apache 2.0) using a Mixture-of-Experts (MoE) architecture — 116.8B total parameters but only 5.1B active per token (128 experts, Top-4 routing). This is why it runs at 40 tok/s despite being 65GB on disk. It uses MXFP4 quantization for the MoE weights with BF16 for other layers. NVIDIA recommends it as the best model for the DGX Spark.
+>
+> **Fast fallback:** nemotron-3-nano:30b is NVIDIA's own model and the fastest on the Spark at 71 tok/s. Consider using it for speed-critical requests where response time matters more than depth.
 
 ### Why These Speeds?
 
