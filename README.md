@@ -36,7 +36,7 @@ Telegram <--> OpenClaw Gateway <--> qwen3:32b (via Ollama)
 | llama3.1:70b | 42GB | ~4.1 tok/s | Available but too slow for interactive use |
 | nomic-embed-text | 274MB | — | Embeddings |
 
-> **Note:** gpt-oss:120b is surprisingly fast despite its size — likely a mixture-of-experts (MoE) model that only activates a fraction of its parameters per token. NVIDIA recommends it as the best model for the DGX Spark.
+> **Note:** gpt-oss:120b is an [OpenAI open-source model](https://openai.com/index/introducing-gpt-oss/) (Apache 2.0) using a Mixture-of-Experts (MoE) architecture — 116.8B total parameters but only 5.1B active per token (128 experts, Top-4 routing). This is why it runs at 42+ tok/s despite being 65GB on disk. It uses MXFP4 quantization for the MoE weights with BF16 for other layers. NVIDIA recommends it as the best model for the DGX Spark.
 
 ### Why These Speeds?
 
