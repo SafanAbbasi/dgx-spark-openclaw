@@ -30,10 +30,13 @@ Telegram <--> OpenClaw Gateway <--> qwen3:32b (via Ollama)
 
 | Model | Size | Speed | Use Case |
 |-------|------|-------|----------|
-| qwen3:32b | 20GB | ~8.4 tok/s | Primary model for OpenClaw (best balance) |
-| llama3.1:8b | 4.9GB | ~39 tok/s | Fast responses |
+| gpt-oss:120b | 65GB | ~42.7 tok/s | Primary model for OpenClaw (best quality + fast, MoE architecture) |
+| qwen3:32b | 20GB | ~8.4 tok/s | Alternative model, good quality |
+| llama3.1:8b | 4.9GB | ~38.8 tok/s | Fast responses, basic quality |
 | llama3.1:70b | 42GB | ~4.1 tok/s | Available but too slow for interactive use |
 | nomic-embed-text | 274MB | — | Embeddings |
+
+> **Note:** gpt-oss:120b is surprisingly fast despite its size — likely a mixture-of-experts (MoE) model that only activates a fraction of its parameters per token. NVIDIA recommends it as the best model for the DGX Spark.
 
 ### Why These Speeds?
 
