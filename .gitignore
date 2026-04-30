@@ -10,6 +10,7 @@ scripts/tg-cleanup/tg-clean-log.tsv
 scripts/tg-cleanup/tg-reminder.log
 scripts/gmail-draft-state.json
 scripts/gmail-draft-log.tsv
+scripts/gmail-auth-state.json
 scripts/*.log
 
 # Python

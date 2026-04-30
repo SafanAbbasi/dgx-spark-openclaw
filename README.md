@@ -16,6 +16,7 @@ Telegram <--> OpenClaw Gateway <--> gpt-oss:120b (via Ollama)
                   +--> Cron Jobs:
                   |     • Morning Briefing (7 AM)
                   |     • System Monitor (every 30 min)
+                  |     • Gmail Auth Check (8 AM)
                   |     • Gmail Triage (9 AM)
                   |     • Gmail Draft Watcher (every 15 min, 6 AM–midnight)
                   |     • Evening Quran Verse (9 PM)
@@ -294,6 +295,29 @@ openclaw cron add \
 
 `--no-deliver` keeps the cron silent on Telegram. The wrapper appends to `gmail-draft-log.tsv` for audit, and the watcher's `gmail-draft-state.json` (auto-pruned to 7-day TTL) provides dedup.
 
+### Gmail Auth Check (8 AM daily)
+
+Probes Gmail with a trivial API call to detect whether the OAuth refresh token is still valid. **Why this exists:** Google enforces a 7-day refresh-token expiry for OAuth apps using sensitive/restricted scopes (Gmail/Calendar) that haven't gone through formal app verification, even when the app is published "In production". You'll need to re-run `gog login` weekly. This cron makes that pain visible:
+
+- **Healthy:** silent.
+- **Day 6 of the 7-day window:** Telegram heads-up: "Gmail re-auth due tomorrow."
+- **Auth expired:** urgent Telegram alert with the exact `gog login <email>` command to run.
+
+The watcher and triage scripts also detect `invalid_grant` inside their `run_gog()` calls and pipe the alert through the same shared helper ([scripts/_auth_state.py](scripts/_auth_state.py)). Alerts are rate-limited to once per 6 hours so a 15-min cron doesn't spam during the gap between expiry and you running `gog login`.
+
+State is tracked in `gmail-auth-state.json` (gitignored). Login transitions are auto-detected: when an API call succeeds after a known-broken state, the helper treats it as a fresh `gog login` and resets the 7-day clock — no manual bookkeeping required.
+
+```bash
+openclaw cron add \
+  --name "Gmail Auth Check" \
+  --cron "0 8 * * *" \
+  --tz "America/Chicago" \
+  --session isolated \
+  --no-deliver \
+  --timeout-seconds 90 \
+  --message "Run: bash ~/.openclaw/scripts/gmail-auth-check.sh"
+```
+
 ### Telegram Cleanup Reminder (1st of month, 9 AM)
 
 Monthly nudge to clean up dead Telegram chats — empty stubs from the "Contact joined Telegram" auto-creation, and chats with deleted-account counterparties.
@@ -373,6 +397,12 @@ Read-only Gmail Inbox scan emitter for the Gmail Triage cron. Handles thread ded
 ### `scripts/gmail-draft-watcher.sh` / `gmail-draft-watcher.py`
 Inbox watcher that emits draft candidates. Gates on thread-history (must have replied in last 30 days), state-file dedup (24-hour TTL per thread), and self-sent skip. Edit `USER_EMAILS` / `USER_NAMES` in the .py.
 
+### `scripts/_auth_state.py`
+Shared Gmail auth-health helpers used by triage, draft watcher, and auth check. Tracks last successful auth, last failure, last alert; auto-detects login transitions; rate-limits Telegram pings.
+
+### `scripts/gmail-auth-check.sh` / `gmail-auth-check.py`
+Daily probe + day-6 reminder. Pings Telegram only on (a) day 6 of the 7-day refresh window, or (b) actual `invalid_grant` failure.
+
 ### `scripts/gmail-draft-create.sh`
 **The only path that creates Gmail drafts.** Hardcodes `gog gmail drafts create`, refuses suspicious flag names, post-verifies that the result has `DRAFT` label and not `SENT`, and updates the watcher's state file. The cron prompt must instruct the LLM to use only this wrapper for drafting.
 
@@ -416,6 +446,9 @@ Long-running Python scripts piped to a file (`bash tg-clean.sh > out.log`) appea
 ### Drafts Aren't `id`, They're `draftId`
 `gog gmail drafts create` returns `{"draftId": "r123...", "message": {...}}`. The verification call needs to look at `draftId`, not `id`, or it'll silently fail and lose the draft handle. Test drafts left behind during this confusion are easy to miss — verify in the Gmail UI as well as the `drafts get` API call.
 
+### OAuth Refresh Tokens Expire Every 7 Days
+Google enforces a 7-day refresh-token expiry on OAuth apps using sensitive/restricted scopes (Gmail/Calendar) that haven't gone through verification — even apps in "Production" status. The 100-user cap on the OAuth consent screen is the giveaway: it shows up only when scopes are unapproved. There's no workaround short of formal app verification (manual review, often a paid security assessment for restricted scopes). Workspace service accounts with domain-wide delegation can't help either — they can only impersonate users *within* the same Workspace domain, not personal `@gmail.com` accounts. Practical mitigation: detect the failure fast and remind the user — that's what `gmail-auth-check.{sh,py}` and the shared `_auth_state.py` exist to do.
+
 ### Cron Self-Replication Is a Real Risk
 An agent given exec/full security can call `openclaw cron add`. If a poorly-scoped cron prompt encourages "set up a follow-up", you can end up with thousands of duplicate jobs in `~/.openclaw/cron/jobs.json`. Audit `openclaw cron list | wc -l` periodically; a healthy setup has under 20 jobs. The repo's cron prompts use `--no-deliver` and explicit `EXEC RULES:` headers to keep the LLM on rails.
 
@@ -437,6 +470,9 @@ An agent given exec/full security can call `openclaw cron add`. If a poorly-scop
 | `~/.openclaw/scripts/gmail-draft-create.sh` | Safety-wrapped draft creator |
 | `~/.openclaw/scripts/gmail-draft-state.json` | Watcher dedup state (gitignored) |
 | `~/.openclaw/scripts/gmail-draft-log.tsv` | Audit log of every draft created (gitignored) |
+| `~/.openclaw/scripts/_auth_state.py` | Shared Gmail auth-health helpers |
+| `~/.openclaw/scripts/gmail-auth-check.{sh,py}` | Daily auth probe + reminder |
+| `~/.openclaw/scripts/gmail-auth-state.json` | Auth health state (gitignored) |
 | `~/.openclaw/scripts/tg-cleanup/` | Telegram chat cleanup (Telethon) |
 | `~/.openclaw/scripts/tg-cleanup/config.json` | Telethon api_id/api_hash (gitignored) |
 | `~/.openclaw/scripts/tg-cleanup/tg.session` | Telethon auth tokens (gitignored) |

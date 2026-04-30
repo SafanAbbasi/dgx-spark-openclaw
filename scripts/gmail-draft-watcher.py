@@ -73,7 +73,12 @@ def run_gog(args, timeout=20):
             capture_output=True, text=True, timeout=timeout,
         )
         if out.returncode != 0:
+            from _auth_state import detect_auth_error, record_failure_and_alert
+            if detect_auth_error(out.stderr):
+                record_failure_and_alert(out.stderr)
             return None
+        from _auth_state import record_success
+        record_success()
         return out.stdout
     except Exception:
         return None
