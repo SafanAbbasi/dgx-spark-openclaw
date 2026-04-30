@@ -1,0 +1,27 @@
+# Local secrets — never commit
+scripts/tg-cleanup/config.json
+scripts/tg-cleanup/whitelist.txt
+scripts/tg-cleanup/*.session
+scripts/tg-cleanup/*.session-journal
+
+# Runtime state and logs (machine-specific, contains PII)
+scripts/tg-cleanup/tg-scan-report.tsv
+scripts/tg-cleanup/tg-clean-log.tsv
+scripts/tg-cleanup/tg-reminder.log
+scripts/gmail-draft-state.json
+scripts/gmail-draft-log.tsv
+scripts/*.log
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+*-venv/
+
+# Editor / OS
+.DS_Store
+*.swp
+.idea/
+.vscode/

@@ -1,0 +1,8 @@
+{
+  "_comment": "Get api_id and api_hash from https://my.telegram.org/auth (Tools > API Development Tools). Then copy this file to config.json (which is gitignored) and fill in the real values.",
+  "api_id": 0,
+  "api_hash": "REPLACE_WITH_YOUR_API_HASH",
+  "session_name": "tg",
+  "min_message_scan": 200,
+  "delete_sleep_seconds": 1.5
+}

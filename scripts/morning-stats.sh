@@ -3,7 +3,7 @@ export TZ="America/Chicago"
 echo "=== Date ==="
 echo ""
 echo "  $(date '+%A, %B %d, %Y')"
-echo "  $(/home/saffyai/.local/hijri-venv/bin/python3 -c "
+echo "  $($HOME/.local/hijri-venv/bin/python3 -c "
 from hijridate import Gregorian
 from datetime import datetime
 import zoneinfo

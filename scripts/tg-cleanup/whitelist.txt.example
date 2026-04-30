@@ -1,0 +1,8 @@
+# One identifier per line — name (lowercased), @username, or +phone.
+# Lines starting with # are ignored. Anything matching here is preserved
+# even if the chat looks deletable.
+#
+# Example entries:
+#   mom
+#   @some_username
+#   +18005551234
